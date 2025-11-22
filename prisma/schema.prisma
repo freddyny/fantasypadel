@@ -1,0 +1,83 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "mysql", "sqlite", etc.
+  url      = env("DATABASE_URL")
+}
+
+// Main tournament entity
+model Tournament {
+  id            String   @id @default(cuid())
+  name          String?
+  numberOfCourts Int
+  status        String   // 'setup', 'in-progress', 'completed'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  players       Player[]
+  matches       Match[]
+  
+  @@map("tournaments")
+}
+
+// Player entity
+model Player {
+  id            String   @id @default(cuid())
+  name          String
+  tournamentId  String
+  gamesWon      Int      @default(0)
+  gamesLost     Int      @default(0)
+  pointsFor     Int      @default(0)
+  pointsAgainst Int      @default(0)
+  createdAt     DateTime @default(now())
+  
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  
+  // Relations for matches
+  team1Player1Matches Match[] @relation("Team1Player1")
+  team1Player2Matches Match[] @relation("Team1Player2")
+  team2Player1Matches Match[] @relation("Team2Player1")
+  team2Player2Matches Match[] @relation("Team2Player2")
+  
+  @@index([tournamentId])
+  @@map("players")
+}
+
+// Match entity
+model Match {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  
+  // Team 1
+  team1Player1Id String
+  team1Player2Id String
+  team1Score     Int?
+  
+  // Team 2
+  team2Player1Id String
+  team2Player2Id String
+  team2Score     Int?
+  
+  status        String   // 'pending', 'in-progress', 'completed'
+  courtNumber   Int?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  
+  // Player relations
+  team1Player1  Player @relation("Team1Player1", fields: [team1Player1Id], references: [id], onDelete: Cascade)
+  team1Player2  Player @relation("Team1Player2", fields: [team1Player2Id], references: [id], onDelete: Cascade)
+  team2Player1  Player @relation("Team2Player1", fields: [team2Player1Id], references: [id], onDelete: Cascade)
+  team2Player2  Player @relation("Team2Player2", fields: [team2Player2Id], references: [id], onDelete: Cascade)
+  
+  @@index([tournamentId])
+  @@index([status])
+  @@map("matches")
+}
